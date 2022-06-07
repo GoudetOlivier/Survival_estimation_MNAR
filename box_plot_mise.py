@@ -40,24 +40,25 @@ for rho in ["0.0","0.25","0.5", "0.75"]:
 
     cpt = 0
 
-    #for filename in os.listdir("new_results/" + dataset + "/xi_" + str(pr_xi) + "_delta_" + str(pr_delta)):
+    #for filename in os.listdir("results/" + dataset + "/xi_" + str(pr_xi) + "_delta_" + str(pr_delta)):
     
         
-        
-        #if("results_frechet_n_2000_rho_" + str(rho) in filename):
+        #print(filename)
+        #if("Global_score_MAR001weibull_n_2000_nbIter_1_rho_" + str(rho) in filename):
+            #print("ok")
             
             #file_oldname = filename
-            #file_newname_newfile = "results_frechet_n_2000_rho_" + str(rho) + "_xi_" + str(pr_xi) + "_delta_" + str(pr_delta) + "_seed_" + str(cpt)
+            #file_newname_newfile = "results_weibull_n_2000_rho_" + str(rho) + "_xi_" + str(pr_xi) + "_delta_" + str(pr_delta) + "_seed_" + str(cpt)
             #print(filename)
             #print(file_newname_newfile)
             
-            #os.rename("new_results/" + dataset + "/xi_" + str(pr_xi) + "_delta_" + str(pr_delta) + "/" + file_oldname, "new_results/" + dataset + "/xi_" + str(pr_xi) + "_delta_" + str(pr_delta) + "/" + file_newname_newfile)
+            #os.rename("results/" + dataset + "/xi_" + str(pr_xi) + "_delta_" + str(pr_delta) + "/" + file_oldname, "results/" + dataset + "/xi_" + str(pr_xi) + "_delta_" + str(pr_delta) + "/" + file_newname_newfile)
             
             #cpt += 1
             
     for seed in range(200):
 
-        fileName = "results/" + dataset + "/xi_" + str(pr_xi) + "_delta_" + str(pr_delta) +  "/" + "results_frechet_n_2000_rho_" + str(rho) + "_xi_" + str(pr_xi) + "_delta_" + str(pr_delta) + "_seed_" + str(cpt)
+        fileName = "results/" + dataset + "/xi_" + str(pr_xi) + "_delta_" + str(pr_delta) +  "/" + "results_" + dataset + "_n_2000_rho_" + str(rho) + "_xi_" + str(pr_xi) + "_delta_" + str(pr_delta) + "_seed_" + str(cpt)
 
         print(fileName)
         
@@ -129,7 +130,7 @@ layout = go.Layout(
         size=24
     ),
     boxmode='group',
-    title="Pourcentage xi=1 : " + str(pr_xi) + "%" + " - Pourcentage delta=1 : " + str(pr_delta) + "%"
+    title= dataset + " - Pourcentage xi=1 : " + str(pr_xi) + "%" + " - Pourcentage delta=1 : " + str(pr_delta) + "%"
 )
     
 
