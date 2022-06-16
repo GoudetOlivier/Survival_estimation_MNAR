@@ -80,8 +80,10 @@ if __name__ == '__main__':
     lr = 0.001
 
 
-    nb_epoch_xi = 1000
-    nb_epoch_delta_rho = 1000
+    nb_epoch_xi = 10
+    nb_epoch_delta_rho = 10
+    nb_epoch_delta_MAR = 1000
+    
     batch_size = 100
 
     #nb_epoch_xi = 3
@@ -311,6 +313,10 @@ if __name__ == '__main__':
                         for k in range(nb_iter):
 
                             relaunch = True
+                            
+                            print("NN_MNAR")
+                            
+                            
                             while (relaunch == True):
 
                                 # if(type_model == "NN_two_steps"):
@@ -363,16 +369,21 @@ if __name__ == '__main__':
 
                             relaunch = True
 
+                            print("NN_MAR")
+                            
                             while(relaunch):
 
                                 mnar = HeckMan_MAR(f,  device, noCovariateMode)
 
-                                mnar.fit(list_X_obs[k],  list_T_obs[k], list_delta_obs[k], list_probaDelta_obs[k], lr, nb_epoch_delta_rho, batch_size)
+                                mnar.fit(list_X_obs[k],  list_T_obs[k], list_delta_obs[k], list_probaDelta_obs[k], lr, nb_epoch_delta_MAR, batch_size)
 
                                 p[k, :] = mnar.predict(X[k,], T[k,])
 
-                                if(np.isnan(np.sum(p[k, :]))==False):
-                                    relaunch = False
+                                if(np.isnan(np.sum(p[k, :]))==False):                              
+                                    relaunch = False                  
+                                else:    
+                                    nb_epoch_delta_MAR = nb_epoch_delta_MAR//2
+                                    
 
 
                     if (type_model == "Linear_with_delta"):
