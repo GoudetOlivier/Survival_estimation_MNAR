@@ -10,7 +10,7 @@ from sklearn import datasets
 from sklearn import preprocessing
 from scipy.stats import norm
 from scipy.stats import multivariate_normal as mvn
-
+from sklearn.preprocessing import MinMaxScaler
 
 #############################################
 # Kernel function for regression estimation #
@@ -24,12 +24,19 @@ def Subramanian_estimator(X, T, delta, xi, h):
     pi = np.zeros((X.shape[0]))
     T = np.expand_dims(T, axis=1)
 
+
     XT = np.hstack((X,T))
+
+
+
 
     for i in range(X.shape[0]):
 
         distance = np.linalg.norm(XT[i] - XT, axis=1)
+
         kernel = quad_kern(distance/h)
+
+
         pi[i] = np.sum(kernel*xi)/np.sum(kernel)
 
 
@@ -908,9 +915,12 @@ def cross_val_beran(n,obs, delta, p, x,list_h,k):
 
     for h in list_h:
 
+        print("h : " + str(h))
         score = 0
 
         for i in range(n):
+
+
 
             obs_del_i = np.delete(obs, i, 0)
             p_del_i = np.delete(p, i, 0)
@@ -947,6 +957,8 @@ def cross_val_beran_Subramanian_beran(n,obs, delta, xi,  x, list_h1, list_h2, k)
     best_h2 = -1
 
     for h1 in list_h1:
+
+        print("h1 : " + str(h1))
 
         p = Subramanian_estimator(x, obs, delta, xi, h1)
 
@@ -1189,6 +1201,7 @@ def beran_estimator(t,obs,p,x=None, x_eval=None, h=0.1, mode_test=False, noCovar
             W = 1 / (1 + np.arange(n))
         else:
             W = quad_kern(distance / h)
+
 
         sum_W = np.sum(W)
 

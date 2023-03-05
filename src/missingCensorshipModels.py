@@ -202,7 +202,9 @@ class HeckMan_MNAR():
 
 
 
-        pbar = tqdm(range(nb_epochs))
+        #pbar = tqdm(range(nb_epochs))
+        
+        pbar = range(nb_epochs)
 
 
         for i in pbar:
@@ -284,14 +286,14 @@ class HeckMan_MNAR():
                 # print(self.rho.grad)
 
                 optimizer1.step()
-                #optimizer2.step()
+                optimizer2.step()
 
                 #if (self.rho.data > 1):
                     #self.rho.data[0] = 0.99
                 #elif(self.rho.data < -1):
                     #self.rho.data[0] = -0.99
 
-                pbar.set_postfix(iter=i, idx_batch = cpt_batch, sum0 = sum0.item(), sum1 = sum1.item(), sum2 = sum2.item(), loss = loss.item(), rho = self.rho.item(), diff_proba = diff_proba.item())
+                #pbar.set_postfix(iter=i, idx_batch = cpt_batch, sum0 = sum0.item(), sum1 = sum1.item(), sum2 = sum2.item(), loss = loss.item(), rho = self.rho.item(), diff_proba = diff_proba.item())
 
 
                 cpt_batch += 1
@@ -327,9 +329,15 @@ class HeckMan_MNAR_two_steps():
         self.f.reset_parameters()
         self.g.reset_parameters()
 
-        self.rho = rho
-        #self.rho = torch.rand(1, requires_grad=True, device=device)
-        #self.rho.data = self.rho.data*2-1
+        if(rho != None):
+            self.rho = rho
+            self.learningRho = False
+        else:
+            self.learningRho = True
+            self.rho = torch.rand(1, requires_grad=True, device=device)
+
+
+        self.rho.data = self.rho.data*2-1
 
         #print("rho init : " + str(self.rho.data))
         self.device = device
@@ -340,7 +348,8 @@ class HeckMan_MNAR_two_steps():
 
     def reinit(self):
         self.f.reset_parameters()
-        #self.rho = torch.rand(1, requires_grad=True, device=self.device)
+        if(self.learningRho):
+            self.rho = torch.rand(1, requires_grad=True, device=self.device)
         #print("rho init : " + str(self.rho.data))
 
     def fit_xi(self, XS, T,  xi, probaXi, eta1, nb_epochs, batch_size):
@@ -355,17 +364,21 @@ class HeckMan_MNAR_two_steps():
 
         xi = torch.tensor(xi).float().to(self.device).unsqueeze(-1)
 
-        probaXi = torch.tensor(probaXi).float().to(self.device).unsqueeze(-1)
+        if(probaXi != None):
+            probaXi = torch.tensor(probaXi).float().to(self.device).unsqueeze(-1)
 
-        traindata = torch.cat([XS, T, xi, probaXi], axis=1)
+            traindata = torch.cat([XS, T, xi, probaXi], axis=1)
+
+        else:
+            traindata = torch.cat([XS, T, xi], axis=1)
 
         dataloader = torch.utils.data.DataLoader(traindata, batch_size=batch_size, shuffle=True)
 
         optimizer1 = optim.Adam(list(self.g.parameters()), lr=eta1)
 
 
-        pbar = tqdm(range(nb_epochs))
-        #pbar = range(nb_epochs)
+        #pbar = tqdm(range(nb_epochs))
+        pbar = range(nb_epochs)
         
         for i in pbar:
 
@@ -376,7 +389,8 @@ class HeckMan_MNAR_two_steps():
                 XS_batch = data[:, :XS.shape[1]]
                 T_batch = data[:, XS.shape[1]]
                 xi_batch = data[:, XS.shape[1] + 1]
-                probaXi_batch = data[:, XS.shape[1] + 2]
+                if (probaXi != None):
+                    probaXi_batch = data[:, XS.shape[1] + 2]
 
                 optimizer1.zero_grad()
 
@@ -389,7 +403,8 @@ class HeckMan_MNAR_two_steps():
                 if (torch.isnan(gXS.sum())):
                     break
 
-                diff_proba = torch.abs(self.m.cdf(gXS) - probaXi_batch).mean()
+                if (probaXi != None):
+                    diff_proba = torch.abs(self.m.cdf(gXS) - probaXi_batch).mean()
 
                 loss = -(xi_batch * torch.log(self.m.cdf(gXS)) + (1 - xi_batch) * torch.log(
                     1 - self.m.cdf(gXS))).mean()
@@ -399,13 +414,15 @@ class HeckMan_MNAR_two_steps():
 
                 optimizer1.step()
 
-
-                pbar.set_postfix(iter=i, idx_batch=cpt_batch, loss=loss.item(),  diff_proba=diff_proba.item())
+                #if (probaXi != None):
+                #    pbar.set_postfix(iter=i, idx_batch=cpt_batch, loss=loss.item(),  diff_proba=diff_proba.item())
+                #else:
+                #    pbar.set_postfix(iter=i, idx_batch=cpt_batch, loss=loss.item())
 
                 cpt_batch += 1
 
-            if (torch.isnan(loss)):
-                break
+                if (torch.isnan(loss)):
+                    break
 
 
     def fit_delta_rho(self, X, XS, T, delta, xi, probaDelta, eta1, eta2, nb_epochs, batch_size):
@@ -424,15 +441,21 @@ class HeckMan_MNAR_two_steps():
         delta = torch.tensor(delta).float().to(self.device).unsqueeze(-1)
         xi = torch.tensor(xi).float().to(self.device).unsqueeze(-1)
 
-        probaDelta = torch.tensor(probaDelta).float().to(self.device).unsqueeze(-1)
+        if(probaDelta != None):
+            probaDelta = torch.tensor(probaDelta).float().to(self.device).unsqueeze(-1)
 
-        traindata = torch.cat([X, XS, T, delta, xi, probaDelta], axis=1)
+        if (probaDelta != None):
+            traindata = torch.cat([X, XS, T, delta, xi, probaDelta], axis=1)
+        else:
+            traindata = torch.cat([X, XS, T, delta, xi], axis=1)
+
 
         dataloader = torch.utils.data.DataLoader(traindata, batch_size=batch_size, shuffle=True)
 
         optimizer1 = optim.Adam(list(self.f.parameters()), lr=eta1)
 
-        #optimizer2 = optim.Adam([self.rho], lr=eta2)
+        if (self.learningRho):
+            optimizer2 = optim.Adam([self.rho], lr=eta1)
 
         maxpts = 25000
         abseps = 0.001
@@ -440,9 +463,9 @@ class HeckMan_MNAR_two_steps():
 
         # bivariateNormalCDF = BivariateNormalCDF.apply
 
-        pbar = tqdm(range(nb_epochs))
+        #pbar = tqdm(range(nb_epochs))
         
-        #pbar = range(nb_epochs)
+        pbar = range(nb_epochs)
 
         for i in pbar:
 
@@ -458,10 +481,12 @@ class HeckMan_MNAR_two_steps():
                 delta_batch = data[:, X.shape[1] + XS.shape[1] + 1]
                 xi_batch = data[:, X.shape[1] + XS.shape[1] + 2]
 
-                probaDelta_batch = data[:, X.shape[1] + XS.shape[1] + 3]
+                if (probaDelta != None):
+                    probaDelta_batch = data[:, X.shape[1] + XS.shape[1] + 3]
 
                 optimizer1.zero_grad()
-                #optimizer2.zero_grad()
+                if (self.learningRho):
+                    optimizer2.zero_grad()
 
                 if (self.noCovariateMode):
                     gXS = self.g.forwardNoCovariate(T_batch).squeeze(-1)
@@ -473,7 +498,8 @@ class HeckMan_MNAR_two_steps():
                 if (torch.isnan(fX.sum())):
                     break
 
-                diff_proba = torch.abs(self.m.cdf(fX) - probaDelta_batch).mean()
+                if (probaDelta != None):
+                    diff_proba = torch.abs(self.m.cdf(fX) - probaDelta_batch).mean()
 
                 upper1 = torch.stack([gXS, fX], 1)
                 upper2 = torch.stack([gXS, -fX], 1)
@@ -513,19 +539,25 @@ class HeckMan_MNAR_two_steps():
 
                 optimizer1.step()
 
+                if (self.learningRho):
+                    optimizer2.step()
 
-
-
-
-                #optimizer2.step()
 
                 #if (self.rho.data > 1):
                     #self.rho.data[0] = 0.99
                 #elif (self.rho.data < -1):
                     #self.rho.data[0] = -0.99
 
-                pbar.set_postfix(iter=i, idx_batch=cpt_batch, sum1=sum1.item(), sum2=sum2.item(),
-                                loss=loss.item(), diff_proba=diff_proba.item())
+                #if (self.learningRho):
+                    #pbar.set_postfix(iter=i, idx_batch=cpt_batch, sum1=sum1.item(), sum2=sum2.item(),
+                                     #loss=loss.item(), rho = self.rho.item())
+                #else:
+                    #if (probaDelta != None):
+                        #pbar.set_postfix(iter=i, idx_batch=cpt_batch, sum1=sum1.item(), sum2=sum2.item(),
+                                    #loss=loss.item(), diff_proba=diff_proba.item())
+                    #else:
+                        #pbar.set_postfix(iter=i, idx_batch=cpt_batch, sum1=sum1.item(), sum2=sum2.item(),
+                                    #loss=loss.item())
 
                 cpt_batch += 1
 
@@ -549,6 +581,11 @@ class HeckMan_MNAR_two_steps():
         else:
             return self.m.cdf(value).detach().cpu().numpy().squeeze(-1)
 
+    def getRho(self):
+        
+        return self.rho.item()
+    
+    
 
 class HeckMan_MAR():
 
@@ -581,11 +618,11 @@ class HeckMan_MAR():
         T = torch.tensor(T).float().to(self.device).unsqueeze(-1)
         delta = torch.tensor(delta).float().to(self.device).unsqueeze(-1)
 
-        probaDelta = torch.tensor(probaDelta).float().to(self.device).unsqueeze(-1)
-
-
-        traindata = torch.cat([ X, T, delta,  probaDelta], axis=1)
-
+        if(probaDelta != None):
+            probaDelta = torch.tensor(probaDelta).float().to(self.device).unsqueeze(-1)
+            traindata = torch.cat([ X, T, delta,  probaDelta], axis=1)
+        else:
+            traindata = torch.cat([X, T, delta], axis=1)
 
 
         dataloader = torch.utils.data.DataLoader(traindata, batch_size=batch_size, shuffle=True)
@@ -595,8 +632,8 @@ class HeckMan_MAR():
 
 
 
-        pbar = tqdm(range(nb_epochs))
-        #pbar = range(nb_epochs)
+        #pbar = tqdm(range(nb_epochs))
+        pbar = range(nb_epochs)
 
         for i in pbar:
 
@@ -607,7 +644,9 @@ class HeckMan_MAR():
                 X_batch = data[:, :X.shape[1]]
                 T_batch = data[:, X.shape[1]]
                 delta_batch = data[:, X.shape[1] + 1]
-                probaDelta_batch = data[:, X.shape[1] + 2]
+
+                if (probaDelta != None):
+                    probaDelta_batch = data[:, X.shape[1] + 2]
 
 
                 optimizer.zero_grad()
@@ -620,7 +659,8 @@ class HeckMan_MAR():
                 if (torch.isnan(fX.sum())):
                     break
 
-                diff_proba = torch.abs(self.m.cdf(fX) - probaDelta_batch).mean()
+                if (probaDelta != None):
+                    diff_proba = torch.abs(self.m.cdf(fX) - probaDelta_batch).mean()
 
                 loss = -(delta_batch * torch.log(self.m.cdf(fX)) + (1-delta_batch) * torch.log(1-self.m.cdf(fX))).mean()
 
@@ -630,7 +670,10 @@ class HeckMan_MAR():
 
                 optimizer.step()
 
-                pbar.set_postfix(iter=i, idx_batch = cpt_batch, loss = loss.item(), diff_proba = diff_proba.item())
+                #if (probaDelta != None):
+                    #pbar.set_postfix(iter=i, idx_batch = cpt_batch, loss = loss.item(), diff_proba = diff_proba.item())
+                #else:
+                    #pbar.set_postfix(iter=i, idx_batch=cpt_batch, loss=loss.item())
 
                 cpt_batch += 1
 
